@@ -15,6 +15,7 @@ public class TradeMasterPanel extends PluginPanel {
 
         this.setBorder(BorderFactory.createEmptyBorder(MARGIN, MARGIN, MARGIN, MARGIN));
 
+
         ImageIcon scaledHomeIcon = getScaledImageIcon("/home_icon_white_filled.png", 20, 20);
         JButton homeButton = new JButton(scaledHomeIcon);
         homeButton.setToolTipText("Home");
@@ -39,6 +40,7 @@ public class TradeMasterPanel extends PluginPanel {
         homeWealthGroup.add(Box.createHorizontalGlue());
         homeWealthGroup.add(wealthGroup);
 
+
         ImageIcon watchlistIcon = getScaledImageIcon("/bookmark_icon_white_filled.png", 20, 20);
         JButton watchlistButton = new JButton("Watchlist", watchlistIcon);
         watchlistButton.setMargin(new Insets(Y_GAP, X_GAP, Y_GAP, X_GAP));
@@ -54,7 +56,30 @@ public class TradeMasterPanel extends PluginPanel {
         tradesButton.setMargin(new Insets(Y_GAP, X_GAP, Y_GAP, X_GAP));
         tradesButton.setHorizontalAlignment(SwingConstants.LEFT);
 
+
+        JPanel searchPanel = new JPanel();
+        searchPanel.setLayout(new BoxLayout(searchPanel, BoxLayout.X_AXIS));
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        searchPanel.setBackground(new Color(30, 30, 30));
+
+        ImageIcon searchIcon = getScaledImageIcon("/search_icon.png", 14, 14);
+        JLabel iconLabel = new JLabel(searchIcon);
+        iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        iconLabel.setOpaque(false);
+
+        JTextField searchField = new JTextField();
+        searchField.setBackground(new Color(30, 30, 30));
+        searchField.setForeground(Color.WHITE);
+        searchField.setCaretColor(Color.WHITE);
+        searchField.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+        searchPanel.add(iconLabel);
+        searchPanel.add(Box.createHorizontalStrut(5));
+        searchPanel.add(searchField);
+
+
         add(homeWealthGroup);
+        add(searchPanel);
         add(watchlistButton);
         add(offersButton);
         add(tradesButton);
