@@ -10,14 +10,22 @@ import java.math.BigInteger;
 public class HomeModel {
     private long bankWealth;
     private long inventoryWealth;
+    private long geWealth;
 
-    public HomeModel(long bankWealth, long inventoryWealth) {
+    public HomeModel() {
+        this.bankWealth = 0;
+        this.inventoryWealth = 0;
+        this.geWealth = 0;
+    }
+
+    public HomeModel(long bankWealth, long inventoryWealth, long geWealth) {
         this.bankWealth = bankWealth;
         this.inventoryWealth = inventoryWealth;
+        this.geWealth = geWealth;
     }
 
     public long getPlayerWealth() {
-        return bankWealth + inventoryWealth;
+        return bankWealth + inventoryWealth + geWealth;
     }
 
 }

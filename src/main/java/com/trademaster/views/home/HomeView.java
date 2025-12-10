@@ -1,6 +1,5 @@
 package com.trademaster.views.home;
 
-import com.trademaster.TradeMasterPlugin;
 import com.trademaster.controllers.HomeController;
 import com.trademaster.models.WealthSummary;
 import net.runelite.client.ui.PluginPanel;
@@ -8,7 +7,6 @@ import net.runelite.client.ui.components.IconTextField;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.text.IconView;
 import java.awt.*;
 import java.util.AbstractMap;
 import java.util.List;
@@ -74,13 +72,14 @@ public class HomeView extends PluginPanel {
 
 
         controller.setView(this);
-        controller.init();
+        controller.refresh();
     }
 
     public void setWealthText(WealthSummary wealth) {
         wealthLabel.setText(wealth.getTotalAbbreviated());
         wealthLabel.setToolTipText("Bank: " + wealth.getBank() + "\n" +
                 "Inventory: " + wealth.getInventory() + "\n" +
+                "GE Offers: " + wealth.getGe() + "\n" +
                 "Total: " + wealth.getTotal());
     }
 

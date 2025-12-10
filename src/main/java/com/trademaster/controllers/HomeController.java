@@ -20,7 +20,7 @@ public class HomeController {
         this.model = model;
     }
 
-    public void init() {
+    public void refresh() {
         updateWealthDisplay();
     }
 
@@ -28,8 +28,9 @@ public class HomeController {
         long total = model.getPlayerWealth();
         long bank = model.getBankWealth();
         long inventory = model.getInventoryWealth();
+        long ge = model.getGeWealth();
 
-        WealthSummary wealth = new WealthSummary(formatNumber(bank), formatNumber(inventory), formatNumber(total), abbreviateNumber(total));
+        WealthSummary wealth = new WealthSummary(formatNumber(bank), formatNumber(inventory), formatNumber(ge), formatNumber(total), abbreviateNumber(total));
         view.setWealthText(wealth);
     }
 
