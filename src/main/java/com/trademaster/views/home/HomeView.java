@@ -1,7 +1,8 @@
 package com.trademaster.views.home;
 
 import com.trademaster.controllers.HomeController;
-import com.trademaster.models.WealthSummary;
+import com.trademaster.models.PlayerWealth;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 
@@ -12,9 +13,9 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class HomeView extends PluginPanel {
     private final JLabel wealthLabel = new JLabel();
-    private final JLabel wealthTooltipLabel = new JLabel();
 
     public HomeView(HomeController controller) {
         // Home button
@@ -71,11 +72,13 @@ public class HomeView extends PluginPanel {
         add(profitSection);
 
 
+
+
         controller.setView(this);
         controller.refresh();
     }
 
-    public void setWealthText(WealthSummary wealth) {
+    public void setWealthText(PlayerWealth wealth) {
         wealthLabel.setText(wealth.getTotalAbbreviated());
         wealthLabel.setToolTipText("Bank: " + wealth.getBank() + "\n" +
                 "Inventory: " + wealth.getInventory() + "\n" +

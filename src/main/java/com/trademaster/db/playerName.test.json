@@ -1,0 +1,35 @@
+{
+  "wealth": {
+    "bank": 8461,
+    "inventory": 5464,
+    "ge": 5841
+  },
+  "currentGeOffers": [
+    {
+      "startTime": 13518431,
+      "endTime": 93518431,
+      "price": 72,
+      "offerType": "SELL",
+      "quantity": 13,
+      "itemId": 2313
+    }
+  ],
+  "geTrades": [
+    {
+      "startTime": 13518431,
+      "endTime": 93518431,
+      "price": 64,
+      "offerType": "BUY",
+      "quantity": 13,
+      "itemId": 2313
+    },
+    {
+      "startTime": 93518431,
+      "endTime": 113518431,
+      "price": 32,
+      "offerType": "BUY",
+      "quantity": 26,
+      "itemId": 2300
+    }
+  ]
+}

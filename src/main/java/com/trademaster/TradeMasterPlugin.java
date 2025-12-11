@@ -2,6 +2,7 @@ package com.trademaster;
 
 import com.google.inject.Provides;
 import com.trademaster.controllers.HomeController;
+import com.trademaster.db.DBManager;
 import com.trademaster.models.HomeModel;
 import com.trademaster.services.GEPriceService;
 import com.trademaster.views.home.HomeView;
@@ -16,6 +17,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
+import net.runelite.http.api.ge.GrandExchangeTrade;
 
 import javax.inject.Inject;
 
@@ -40,7 +42,6 @@ public class TradeMasterPlugin extends Plugin {
     private NavigationButton navButton;
     private HomeModel model;
     private HomeController controller;
-    private HomeView view;
 
 
     @Override
@@ -49,13 +50,16 @@ public class TradeMasterPlugin extends Plugin {
 
         model = new HomeModel();
         controller = new HomeController(model);
-        view = new HomeView(controller);
+        HomeView view = new HomeView(controller);
 
         navButton = NavigationButton.builder()
                 .tooltip("Trade Master")
                 .icon(ImageUtil.loadImageResource(TradeMasterPlugin.class, "/icon.png"))
+                .priority(2)
                 .panel(view)
                 .build();
+
+        DBManager manager = new DBManager();
 
         clientToolbar.addNavigation(navButton);
     }
@@ -75,9 +79,11 @@ public class TradeMasterPlugin extends Plugin {
 
     @Subscribe
     public void onGameTick(GameTick event) {
+        // TODO: I dont want to do this onGameTick but every 60s
         ItemContainer invContainer = client.getItemContainer(InventoryID.INVENTORY);
         ItemContainer bankContainer = client.getItemContainer(InventoryID.BANK);
         GrandExchangeOffer[] geOffers = client.getGrandExchangeOffers();
+
 
         if (invContainer != null) {
             Item[] items = invContainer.getItems();
