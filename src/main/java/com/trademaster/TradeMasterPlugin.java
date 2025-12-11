@@ -4,11 +4,12 @@ import com.google.inject.Provides;
 import com.trademaster.controllers.HomeController;
 import com.trademaster.db.DBManager;
 import com.trademaster.models.HomeModel;
-import com.trademaster.services.GEPriceService;
 import com.trademaster.views.home.HomeView;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
@@ -17,7 +18,6 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.http.api.ge.GrandExchangeTrade;
 
 import javax.inject.Inject;
 
@@ -31,6 +31,9 @@ public class TradeMasterPlugin extends Plugin {
     private Client client;
 
     @Inject
+    private ClientThread clientThread;
+
+    @Inject
     private ClientToolbar clientToolbar;
 
     @Inject
@@ -42,11 +45,17 @@ public class TradeMasterPlugin extends Plugin {
     private NavigationButton navButton;
     private HomeModel model;
     private HomeController controller;
+    private boolean playerInitialized = false;
 
 
     @Override
     protected void startUp() throws Exception {
-        log.debug("Example started!");
+        log.debug("Trade Master started!");
+
+        playerInitialized = false;
+        if (client.getGameState() == GameState.LOGGED_IN) {
+            clientThread.invokeLater(this::initDB);
+        }
 
         model = new HomeModel();
         controller = new HomeController(model);
@@ -59,23 +68,46 @@ public class TradeMasterPlugin extends Plugin {
                 .panel(view)
                 .build();
 
-        DBManager manager = new DBManager();
-
         clientToolbar.addNavigation(navButton);
     }
 
     @Override
     protected void shutDown() throws Exception {
-        log.debug("Example stopped!");
+        log.debug("Trade Master stopped!");
+
+        playerInitialized = false;
         clientToolbar.removeNavigation(navButton);
     }
 
-//    @Subscribe
-//    public void onGameStateChanged(GameStateChanged gameStateChanged) {
-//        if (gameStateChanged.getGameState() == GameState.LOGGED_IN) {
-//            client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Example says " + config.greeting(), null);
-//        }
-//    }
+    @Subscribe
+    public void onGameStateChanged(GameStateChanged gameStateChanged) {
+        if (gameStateChanged.getGameState() == GameState.LOGGED_IN
+                && !playerInitialized) {
+            clientThread.invokeLater(this::initDB);
+        } else {
+            playerInitialized = false;
+        }
+    }
+
+    private void initDB() {
+        final Player player = client.getLocalPlayer();
+
+        if (player == null) {
+            clientThread.invokeLater(this::initDB);
+            return;
+        }
+
+        final String name = player.getName();
+
+        if (name == null || name.isEmpty()) {
+            clientThread.invokeLater(this::initDB);
+            return;
+        }
+
+        // Success
+        playerInitialized = true;
+        DBManager db = new DBManager(name);
+    }
 
     @Subscribe
     public void onGameTick(GameTick event) {
