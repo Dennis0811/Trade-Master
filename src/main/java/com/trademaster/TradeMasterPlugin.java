@@ -2,7 +2,8 @@ package com.trademaster;
 
 import com.google.inject.Provides;
 import com.trademaster.controllers.HomeController;
-import com.trademaster.db.DBManager;
+import com.trademaster.db.DbManager;
+import com.trademaster.db.models.WealthData;
 import com.trademaster.models.HomeModel;
 import com.trademaster.views.home.HomeView;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import net.runelite.api.events.GameTick;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -46,6 +48,9 @@ public class TradeMasterPlugin extends Plugin {
     private HomeModel model;
     private HomeController controller;
     private boolean playerInitialized = false;
+    private DbManager db;
+
+    private final WealthData wealthData = new WealthData();
 
 
     @Override
@@ -53,8 +58,9 @@ public class TradeMasterPlugin extends Plugin {
         log.debug("Trade Master started!");
 
         playerInitialized = false;
+
         if (client.getGameState() == GameState.LOGGED_IN) {
-            clientThread.invokeLater(this::initDB);
+            clientThread.invokeLater(this::createDbManager);
         }
 
         model = new HomeModel();
@@ -75,38 +81,47 @@ public class TradeMasterPlugin extends Plugin {
     protected void shutDown() throws Exception {
         log.debug("Trade Master stopped!");
 
+        saveDbData();
+
         playerInitialized = false;
         clientToolbar.removeNavigation(navButton);
+    }
+
+    @Subscribe
+    public void onClientShutdown(ClientShutdown clientShutdown) {
+        log.debug("Client shuts down!");
+
+        saveDbData();
     }
 
     @Subscribe
     public void onGameStateChanged(GameStateChanged gameStateChanged) {
         if (gameStateChanged.getGameState() == GameState.LOGGED_IN
                 && !playerInitialized) {
-            clientThread.invokeLater(this::initDB);
+            clientThread.invokeLater(this::createDbManager);
         } else {
             playerInitialized = false;
         }
     }
 
-    private void initDB() {
+    private void createDbManager() {
         final Player player = client.getLocalPlayer();
 
         if (player == null) {
-            clientThread.invokeLater(this::initDB);
+            clientThread.invokeLater(this::createDbManager);
             return;
         }
 
         final String name = player.getName();
 
         if (name == null || name.isEmpty()) {
-            clientThread.invokeLater(this::initDB);
+            clientThread.invokeLater(this::createDbManager);
             return;
         }
 
         // Success
         playerInitialized = true;
-        DBManager db = new DBManager(name);
+        db = new DbManager(name, wealthData);
     }
 
     @Subscribe
@@ -115,7 +130,6 @@ public class TradeMasterPlugin extends Plugin {
         ItemContainer invContainer = client.getItemContainer(InventoryID.INVENTORY);
         ItemContainer bankContainer = client.getItemContainer(InventoryID.BANK);
         GrandExchangeOffer[] geOffers = client.getGrandExchangeOffers();
-
 
         if (invContainer != null) {
             Item[] items = invContainer.getItems();
@@ -127,8 +141,8 @@ public class TradeMasterPlugin extends Plugin {
                     int itemQuantity = item.getQuantity();
                     invWealth += (long) itemManager.getItemPrice(itemId) * itemQuantity; //TODO: what fucking price is this using ???
                 }
-
                 model.setInventoryWealth(invWealth);
+                wealthData.setInventoryWealth(invWealth);
                 controller.refresh();
             } catch (Exception e) {
                 log.warn("Failed to fetch GE price for inventory: {}", invWealth);
@@ -147,12 +161,12 @@ public class TradeMasterPlugin extends Plugin {
                 }
 
                 model.setBankWealth(bankWealth);
+                wealthData.setBankWealth(bankWealth);
                 controller.refresh();
             } catch (Exception e) {
                 log.warn("Failed to fetch GE price for bank: {}", bankWealth);
             }
         }
-
 
         long geWealth = 0;
 
@@ -164,16 +178,24 @@ public class TradeMasterPlugin extends Plugin {
             }
 
             model.setGeWealth(geWealth);
+            wealthData.setGeWealth(geWealth);
             controller.refresh();
         } catch (Exception e) {
             log.warn("Failed to fetch GE price for GE: {}", geWealth);
         }
-
     }
 
 
     @Provides
     TradeMasterConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(TradeMasterConfig.class);
+    }
+
+    private void saveDbData() {
+        if (db != null) {
+            db.writeToFile();
+        } else {
+            log.warn("db is null!");
+        }
     }
 }
