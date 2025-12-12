@@ -35,12 +35,15 @@ public class HomeController {
         long inventory = model.getInventoryWealth();
         long ge = model.getGeWealth();
 
+        String totalAbbreviated = abbreviateNumber(total);
+        String totalFormatted = formatNumber(total);
+
         view.setWealthText(
                 CONFIG.abbreviateHoverBank() ? abbreviateNumber(bank) : formatNumber(bank),
                 CONFIG.abbreviateHoverInventory() ? abbreviateNumber(inventory) : formatNumber(inventory),
                 CONFIG.abbreviateHoverGe() ? abbreviateNumber(ge) : formatNumber(ge),
-                CONFIG.abbreviateGpTotal() ? abbreviateNumber(total) : formatNumber(total),
-                CONFIG.abbreviateHoverGpTotal() ? abbreviateNumber(total) : formatNumber(total)
+                CONFIG.abbreviateGpTotal() ? totalAbbreviated : totalFormatted,
+                CONFIG.abbreviateHoverGpTotal() ? totalAbbreviated : totalFormatted
         );
     }
 
