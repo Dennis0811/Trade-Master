@@ -16,7 +16,7 @@ public interface TradeMasterConfig extends Config {
             section = shortenSection,
             position = 1,
             keyName = "abbreviateThreshold",
-            name = "Abbreviate numbers above",
+            name = "Abbreviate above",
             description = "Show abbreviated format (1.2 M) for numbers larger than this value."
     )
     default AbbreviateThresholdTypes abbreviateThreshold() {
