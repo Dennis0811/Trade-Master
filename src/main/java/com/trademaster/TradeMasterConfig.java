@@ -9,6 +9,15 @@ import java.awt.*;
 @ConfigGroup("trademaster")
 public interface TradeMasterConfig extends Config {
     @ConfigItem(
+            keyName = "lastPlayer",
+            name = "Last Player",
+            description = "Stores the last logged in player"
+    )
+    default String lastPlayer() {
+        return "";
+    }
+
+    @ConfigItem(
             position = 6,
             keyName = "greeting",
             name = "Welcome Greeting",

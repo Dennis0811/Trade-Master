@@ -3,6 +3,7 @@ package com.trademaster;
 import com.google.inject.Provides;
 import com.trademaster.controllers.HomeController;
 import com.trademaster.db.DbManager;
+import com.trademaster.db.models.PlayerData;
 import com.trademaster.db.models.WealthData;
 import com.trademaster.models.HomeModel;
 import com.trademaster.views.home.HomeView;
@@ -47,15 +48,16 @@ public class TradeMasterPlugin extends Plugin {
     private NavigationButton navButton;
     private HomeModel model;
     private HomeController controller;
+    private HomeView view;
     private boolean playerInitialized = false;
     private DbManager db;
-
-    private final WealthData wealthData = new WealthData();
+    private PlayerData playerData;
+    private WealthData wealthData = new WealthData();
 
 
     @Override
     protected void startUp() throws Exception {
-        log.debug("Trade Master started!");
+        log.info("Trade Master started!");
 
         playerInitialized = false;
 
@@ -63,9 +65,20 @@ public class TradeMasterPlugin extends Plugin {
             clientThread.invokeLater(this::createDbManager);
         }
 
+        DbManager earlyDb = new DbManager();
+
+        if (earlyDb.dbFileExists()) {
+            playerData = earlyDb.getDbFileData();
+        }
+
         model = new HomeModel();
+
+        if (playerData != null) {
+            model.loadWealthDataFromFile(playerData);
+        }
+
         controller = new HomeController(model);
-        HomeView view = new HomeView(controller);
+        view = new HomeView(controller);
 
         navButton = NavigationButton.builder()
                 .tooltip("Trade Master")
@@ -79,7 +92,7 @@ public class TradeMasterPlugin extends Plugin {
 
     @Override
     protected void shutDown() throws Exception {
-        log.debug("Trade Master stopped!");
+        log.info("Trade Master stopped!");
 
         saveDbData();
 
@@ -89,7 +102,7 @@ public class TradeMasterPlugin extends Plugin {
 
     @Subscribe
     public void onClientShutdown(ClientShutdown clientShutdown) {
-        log.debug("Client shuts down!");
+        log.info("Client shuts down!");
 
         saveDbData();
     }
@@ -122,6 +135,13 @@ public class TradeMasterPlugin extends Plugin {
         // Success
         playerInitialized = true;
         db = new DbManager(name, wealthData);
+
+        playerData = db.getDbFileData();
+
+        if (playerData != null) {
+            model.loadWealthDataFromFile(playerData);
+            controller.refresh();
+        }
     }
 
     @Subscribe
@@ -190,6 +210,7 @@ public class TradeMasterPlugin extends Plugin {
     TradeMasterConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(TradeMasterConfig.class);
     }
+
 
     private void saveDbData() {
         if (db != null) {

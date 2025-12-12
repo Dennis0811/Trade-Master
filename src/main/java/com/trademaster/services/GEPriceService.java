@@ -32,8 +32,6 @@ public class GEPriceService {
         }
         scanner.close();
 
-        log.debug(json.toString());
-
         return parsePriceFromJSON(json.toString(), itemId);
     }
 

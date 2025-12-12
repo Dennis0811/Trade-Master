@@ -23,7 +23,7 @@ public class HomeController {
         updateWealthDisplay();
     }
 
-    public void updateWealthDisplay() {
+    private void updateWealthDisplay() {
         long total = model.getPlayerWealth();
         long bank = model.getBankWealth();
         long inventory = model.getInventoryWealth();
