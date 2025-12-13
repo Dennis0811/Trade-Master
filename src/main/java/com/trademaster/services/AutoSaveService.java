@@ -55,7 +55,7 @@ public class AutoSaveService {
                 this::autoSave,
                 intervalMinutes,
                 intervalMinutes,
-                TimeUnit.SECONDS
+                TimeUnit.MINUTES
         );
     }
 
