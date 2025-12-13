@@ -14,9 +14,9 @@ import java.io.*;
 
 @Slf4j
 public class DbManager {
-    private final String FOLDER_NAME = "trademaster";
-    private final File DB_DIR = new File(RuneLite.RUNELITE_DIR, FOLDER_NAME);
-    private final File DB_FILE;
+    private static final String FOLDER_NAME = "trademaster";
+    private static final File DB_DIR = new File(RuneLite.RUNELITE_DIR, FOLDER_NAME);
+    private final File dbFile;
 
     private WealthData wealthData;
     private TradeData[] currentOfferData;
@@ -28,26 +28,26 @@ public class DbManager {
         File[] files = DB_DIR.listFiles((d, name) -> name.endsWith(".json"));
 
         if (files != null && files.length > 0) {
-            this.DB_FILE = files[0];
+            this.dbFile = files[0];
         } else {
-            this.DB_FILE = null;
+            this.dbFile = null;
         }
     }
 
     public DbManager(String playerName, PlayerWealthData playerWealthData) {
-        this.DB_FILE = new File(DB_DIR, playerName + ".json");
+        this.dbFile = new File(DB_DIR, playerName + ".json");
         this.wealthData = playerWealthData.getWealthData();
         this.currentOfferData = playerWealthData.getCurrentGeOfferData();
         this.tradeData = playerWealthData.getPastTradeData();
     }
 
     public DbManager(String playerName, WealthData wealthData) {
-        this.DB_FILE = new File(DB_DIR, playerName + ".json");
+        this.dbFile = new File(DB_DIR, playerName + ".json");
         this.wealthData = wealthData;
     }
 
     public DbManager(String playerName, TradeData[] tradeData, boolean isPastTradeData) {
-        this.DB_FILE = new File(DB_DIR, playerName + ".json");
+        this.dbFile = new File(DB_DIR, playerName + ".json");
 
         if (isPastTradeData) {
             this.tradeData = tradeData;
@@ -58,15 +58,15 @@ public class DbManager {
     }
 
     public boolean dbFileExists() {
-        return DB_FILE != null && DB_FILE.exists();
+        return dbFile != null && dbFile.exists();
     }
 
     public PlayerWealthData getDbFileData() {
-        try (Reader reader = new FileReader(DB_FILE)) {
+        try (Reader reader = new FileReader(dbFile)) {
             Gson gson = new Gson();
             return gson.fromJson(reader, PlayerWealthData.class);
         } catch (IOException e) {
-            log.warn("Couldn't read {} - {}", DB_FILE.getName(), e.getMessage());
+            log.warn("Couldn't read {} - {}", dbFile.getName(), e.getMessage());
         }
         return null;
     }
@@ -96,8 +96,8 @@ public class DbManager {
         dbFile.add("geTrades", trades);
 
 
-        try (Writer writer = new FileWriter(this.DB_FILE)) {
-            log.info("Creating {} at {}", this.DB_FILE.getName(), this.DB_FILE.getPath());
+        try (Writer writer = new FileWriter(this.dbFile)) {
+            log.info("Creating {} at {}", this.dbFile.getName(), this.dbFile.getPath());
 
             Gson gson = new Gson();
             gson.toJson(dbFile, writer);

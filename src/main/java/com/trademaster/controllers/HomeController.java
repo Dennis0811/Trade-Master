@@ -13,16 +13,14 @@ import java.text.NumberFormat;
 @Slf4j
 public class HomeController {
     @Inject
-    private final TradeMasterConfig CONFIG;
-
+    private final TradeMasterConfig config;
     @Inject
     private final HomeModel model;
-
     @Setter
     private HomeView view;
 
     public HomeController(TradeMasterConfig config, HomeModel model) {
-        this.CONFIG = config;
+        this.config = config;
         this.model = model;
     }
 
@@ -40,11 +38,11 @@ public class HomeController {
         String totalFormatted = formatNumber(total);
 
         view.setWealthText(
-                CONFIG.abbreviateHoverBankEnabled() ? abbreviateNumber(bank) : formatNumber(bank),
-                CONFIG.abbreviateHoverInventoryEnabled() ? abbreviateNumber(inventory) : formatNumber(inventory),
-                CONFIG.abbreviateHoverGeEnabled() ? abbreviateNumber(ge) : formatNumber(ge),
-                CONFIG.abbreviateGpTotalEnabled() ? totalAbbreviated : totalFormatted,
-                CONFIG.abbreviateHoverGpTotalEnabled() ? totalAbbreviated : totalFormatted
+                config.abbreviateHoverBankEnabled() ? abbreviateNumber(bank) : formatNumber(bank),
+                config.abbreviateHoverInventoryEnabled() ? abbreviateNumber(inventory) : formatNumber(inventory),
+                config.abbreviateHoverGeEnabled() ? abbreviateNumber(ge) : formatNumber(ge),
+                config.abbreviateGpTotalEnabled() ? totalAbbreviated : totalFormatted,
+                config.abbreviateHoverGpTotalEnabled() ? totalAbbreviated : totalFormatted
         );
     }
 
@@ -54,7 +52,7 @@ public class HomeController {
     }
 
     public String abbreviateNumber(long value) {
-        final long minNumber = CONFIG.abbreviateThreshold().getValue();
+        final long minNumber = config.abbreviateThreshold().getValue();
 
         if (value < minNumber) {
             return formatNumber(value);

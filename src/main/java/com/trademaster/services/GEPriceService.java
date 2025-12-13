@@ -24,7 +24,7 @@ public class GEPriceService {
     private final static String MAPPING = "/mapping";
     private final static String TIMESERIES = "/timeseries";
     private final static String ID_QUERY_PARAMETER = "id";
-    private static final long CACHE_LIFETIME = 60 * 1000;
+    private final static long CACHE_LIFETIME = 60 * 1000;
 
     private TimestepType timestepType;
     private final OkHttpClient httpClient;
@@ -54,7 +54,6 @@ public class GEPriceService {
     }
 
     private GEItemPriceData fetchPrice(int itemId) {
-        log.debug("FETCHING NEW PRICES");
         String url = String.format("%s%s?%s=%d", BASE_URL, LATEST, ID_QUERY_PARAMETER, itemId);
         Request request = new Request.Builder()
                 .url(url)
