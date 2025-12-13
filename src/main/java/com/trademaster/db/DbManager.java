@@ -3,7 +3,7 @@ package com.trademaster.db;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.trademaster.db.models.PlayerData;
+import com.trademaster.db.models.PlayerWealthData;
 import com.trademaster.db.models.TradeData;
 import com.trademaster.db.models.WealthData;
 import com.trademaster.types.OfferTypes;
@@ -30,15 +30,15 @@ public class DbManager {
         if (files != null && files.length > 0) {
             this.DB_FILE = files[0];
         } else {
-            this.DB_FILE = null; // No DB yet
+            this.DB_FILE = null;
         }
     }
 
-    public DbManager(String playerName, PlayerData playerData) {
+    public DbManager(String playerName, PlayerWealthData playerWealthData) {
         this.DB_FILE = new File(DB_DIR, playerName + ".json");
-        this.wealthData = playerData.getWealthData();
-        this.currentOfferData = playerData.getCurrentGeOfferData();
-        this.tradeData = playerData.getPastTradeData();
+        this.wealthData = playerWealthData.getWealthData();
+        this.currentOfferData = playerWealthData.getCurrentGeOfferData();
+        this.tradeData = playerWealthData.getPastTradeData();
     }
 
     public DbManager(String playerName, WealthData wealthData) {
@@ -61,10 +61,10 @@ public class DbManager {
         return DB_FILE != null && DB_FILE.exists();
     }
 
-    public PlayerData getDbFileData() {
+    public PlayerWealthData getDbFileData() {
         try (Reader reader = new FileReader(DB_FILE)) {
             Gson gson = new Gson();
-            return gson.fromJson(reader, PlayerData.class);
+            return gson.fromJson(reader, PlayerWealthData.class);
         } catch (IOException e) {
             log.warn("Couldn't read {} - {}", DB_FILE.getName(), e.getMessage());
         }
@@ -137,7 +137,7 @@ public class DbManager {
     }
 
     public void exportAsCsv() {
-        // export a csv file created from my json file
+        // TODO: export a csv file created from my json file
     }
 
     /**

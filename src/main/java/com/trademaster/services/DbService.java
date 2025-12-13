@@ -1,7 +1,7 @@
 package com.trademaster.services;
 
 import com.trademaster.db.DbManager;
-import com.trademaster.db.models.PlayerData;
+import com.trademaster.db.models.PlayerWealthData;
 import com.trademaster.db.models.WealthData;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,7 +29,7 @@ public class DbService {
         }
     }
 
-    public PlayerData getFallBackData() {
+    public PlayerWealthData getFallBackData() {
         DbManager dm = new DbManager();
         if (!dm.dbFileExists()) {
             return null;

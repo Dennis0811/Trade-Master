@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class PlayerData {
+public class PlayerWealthData {
     @SerializedName("wealth")
     private WealthData wealthData;
 
@@ -16,7 +16,7 @@ public class PlayerData {
     @SerializedName("geTrades")
     private TradeData[] pastTradeData;
 
-    public PlayerData(WealthData wealthData, TradeData[] currentGeOfferData, TradeData[] pastTradeData) {
+    public PlayerWealthData(WealthData wealthData, TradeData[] currentGeOfferData, TradeData[] pastTradeData) {
         this.wealthData = wealthData;
         this.currentGeOfferData = currentGeOfferData;
         this.pastTradeData = pastTradeData;

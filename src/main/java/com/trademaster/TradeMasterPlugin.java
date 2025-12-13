@@ -2,19 +2,22 @@ package com.trademaster;
 
 import com.google.inject.Provides;
 import com.trademaster.controllers.HomeController;
-import com.trademaster.db.models.PlayerData;
-import com.trademaster.db.models.WealthData;
+import com.trademaster.db.models.PlayerWealthData;
 import com.trademaster.models.HomeModel;
 import com.trademaster.services.AutoSaveService;
 import com.trademaster.services.DbService;
+import com.trademaster.services.GEPriceService;
 import com.trademaster.services.WealthDataService;
+import com.trademaster.services.models.GEItemPriceData;
 import com.trademaster.views.home.HomeView;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.events.BeforeRender;
 import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -25,9 +28,17 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.ui.overlay.tooltip.Tooltip;
+import net.runelite.client.ui.overlay.tooltip.TooltipManager;
+import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
 
 import javax.inject.Inject;
+import java.awt.*;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Slf4j
 @PluginDescriptor(
@@ -51,7 +62,10 @@ public class TradeMasterPlugin extends Plugin {
     private DbService dbService;
     @Inject
     private WealthDataService wealthDataService;
-
+    @Inject
+    GEPriceService gePriceService;
+    @Inject
+    TooltipManager tooltipManager;
 
     private NavigationButton navButton;
     private HomeModel model;
@@ -72,7 +86,7 @@ public class TradeMasterPlugin extends Plugin {
         wealthDataService.attachModel(model);
         wealthDataService.attachController(controller);
 
-        PlayerData preliminaryDbData = dbService.getFallBackData();
+        PlayerWealthData preliminaryDbData = dbService.getFallBackData();
         if (preliminaryDbData != null) {
             model.loadWealthDataFromFile(preliminaryDbData);
             controller.refresh();
@@ -133,6 +147,48 @@ public class TradeMasterPlugin extends Plugin {
         wealthDataService.updateGe(geOffers);
     }
 
+    //TODO: get most of the logic out of here and only keep drawing tooltip stuff in
+    @Subscribe
+    public void onBeforeRender(BeforeRender beforeRender) {
+        if (client.isMenuOpen()) {
+            return;
+        }
+
+        MenuEntry[] menuEntries = client.getMenuEntries();
+        int lastEntryId = menuEntries.length - 1;
+
+        if (lastEntryId < 0) {
+            return;
+        }
+
+        MenuEntry menuEntry = menuEntries[lastEntryId];
+        int itemId = menuEntry.getItemId();
+        ItemComposition itemComp = itemManager.getItemComposition(itemId);
+
+        if (itemId < 1 || !itemComp.isTradeable()) {
+            return;
+        }
+
+        Widget widget = menuEntry.getWidget();
+        GEItemPriceData priceData = gePriceService.getPrice(itemId);
+        int lastBuyPrice = priceData.getHigh();
+        int lastSellPrice = priceData.getLow();
+        long lastBuyTime = priceData.getHighTime();
+        long lastSellTime = priceData.getLowTime();
+        int highAlchemyPrice = itemComp.getHaPrice();
+
+        String customMenuEntryText = createCustomMenuEntry(lastBuyPrice, lastSellPrice, lastBuyTime, lastSellTime, highAlchemyPrice);
+
+        if (widget != null &&
+                (WidgetInfo.INVENTORY.getId() == widget.getId()
+                        || WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER.getId() == widget.getId()
+                        || WidgetInfo.BANK_ITEM_CONTAINER.getId() == widget.getId())
+        ) {
+            String formattedText = ColorUtil.prependColorTag(customMenuEntryText, Color.WHITE);
+            tooltipManager.add(new Tooltip(formattedText));
+        }
+    }
+
     @Subscribe
     public void onConfigChanged(ConfigChanged configChanged) {
         if (configChanged.getGroup().equals("trademaster")) {
@@ -174,11 +230,46 @@ public class TradeMasterPlugin extends Plugin {
             autoSaveService.start(dbService);
         }
 
-        PlayerData playerData = dbService.get().getDbFileData();
-        if (playerData != null) {
-            model.loadWealthDataFromFile(playerData);
+        PlayerWealthData playerWealthData = dbService.get().getDbFileData();
+        if (playerWealthData != null) {
+            model.loadWealthDataFromFile(playerWealthData);
             controller.refresh();
         }
     }
 
+    private String createCustomMenuEntry(int lastBuyPrice, int lastSellPrice, long lastBuyTime, long lastSellTime, int highAlchemyPrice) {
+        return String.format(
+                "%s: %d GP<br>%s: %d GP<br>%s: %s<br>%s: %s<br>%s: %d GP",
+                "Last GE Buy Price", lastBuyPrice,
+                "Last GE Sell Price", lastSellPrice,
+                "Last GE Buy Time", timeAgo(lastBuyTime),
+                "Last GE Sell Time", timeAgo(lastSellTime),
+                "HA", highAlchemyPrice
+        );
+    }
+
+    private String convertUnixTimeToLocal(long unixTime) {
+        Instant instant = Instant.ofEpochSecond(unixTime);
+        ZonedDateTime localTime = instant.atZone(ZoneId.systemDefault());
+        return localTime.format(DateTimeFormatter.ofPattern("HH:mm:ss dd.MM.yyyy"));
+    }
+
+    private String timeAgo(long unixTime) {
+        long now = System.currentTimeMillis();
+        long diff = now - unixTime * 1000;
+
+        if (diff < 0) {
+            diff = 0;
+        }
+
+        long seconds = diff / 1000;
+        long minutes = seconds / 60;
+        long hours = minutes / 60;
+        long days = hours / 24;
+
+        if (seconds < 60) return seconds + "s ago";
+        if (minutes < 60) return minutes + "min ago";
+        if (hours < 24) return hours + "h ago";
+        return days + " days ago";
+    }
 }

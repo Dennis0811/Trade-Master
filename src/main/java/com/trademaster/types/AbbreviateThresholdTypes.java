@@ -15,16 +15,15 @@ public enum AbbreviateThresholdTypes {
 
     @Getter
     private final long value;
-    private final String displayedValue;
+    private final String displayValue;
 
     AbbreviateThresholdTypes(long value, String displayedValue) {
         this.value = value;
-        this.displayedValue = displayedValue;
+        this.displayValue = displayedValue;
     }
 
     @Override
     public String toString() {
-        return displayedValue;
+        return displayValue;
     }
-
 }

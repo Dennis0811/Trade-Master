@@ -1,6 +1,6 @@
 package com.trademaster.models;
 
-import com.trademaster.db.models.PlayerData;
+import com.trademaster.db.models.PlayerWealthData;
 import com.trademaster.db.models.WealthData;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,8 +18,8 @@ public class HomeModel {
         this.geWealth = 0;
     }
 
-    public HomeModel(PlayerData playerData) {
-        WealthData wealthData = playerData.getWealthData();
+    public HomeModel(PlayerWealthData playerWealthData) {
+        WealthData wealthData = playerWealthData.getWealthData();
         this.bankWealth = wealthData.getBankWealth();
         this.inventoryWealth = wealthData.getInventoryWealth();
         this.geWealth = wealthData.getGeWealth();
@@ -29,8 +29,8 @@ public class HomeModel {
         return bankWealth + inventoryWealth + geWealth;
     }
 
-    public void loadWealthDataFromFile(PlayerData playerData) {
-        WealthData wealthData = playerData.getWealthData();
+    public void loadWealthDataFromFile(PlayerWealthData playerWealthData) {
+        WealthData wealthData = playerWealthData.getWealthData();
 
         this.bankWealth = wealthData.getBankWealth();
         this.inventoryWealth = wealthData.getInventoryWealth();
