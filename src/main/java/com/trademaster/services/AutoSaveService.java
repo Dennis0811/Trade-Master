@@ -18,18 +18,17 @@ import java.util.concurrent.TimeUnit;
 public class AutoSaveService {
     @Inject
     private TradeMasterConfig config;
-
     @Inject
     private ScheduledExecutorService executor;
-
     @Inject
     private Client client;
+    @Inject
+    private DbService dbService;
 
-    private DbManager dbManager;
     private ScheduledFuture<?> saveTask;
 
-    public void start(DbManager dbManager) {
-        this.dbManager = dbManager;
+    public void start(DbService dbService) {
+        this.dbService = dbService;
         scheduleIfEnabled();
     }
 
@@ -68,6 +67,8 @@ public class AutoSaveService {
 
     private void autoSave() {
         try {
+            DbManager dbManager = dbService.get();
+            
             if (dbManager == null) {
                 return;
             }

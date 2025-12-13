@@ -143,7 +143,7 @@ public class TradeMasterPlugin extends Plugin {
             }
             if (configChanged.getKey().equals("autoSaveEnabled")) {
                 if (config.autoSaveEnabled()) {
-                    autoSaveService.start(dbService.get());
+                    autoSaveService.start(dbService);
                 } else {
                     autoSaveService.stop();
                 }
@@ -171,7 +171,7 @@ public class TradeMasterPlugin extends Plugin {
         dbService.create(player.getName(), wealthDataService.getWealthData());
 
         if (config.autoSaveEnabled()) {
-            autoSaveService.start(dbService.get());
+            autoSaveService.start(dbService);
         }
 
         PlayerData playerData = dbService.get().getDbFileData();
