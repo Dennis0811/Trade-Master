@@ -3,7 +3,7 @@ package com.trademaster.controllers;
 import com.trademaster.TradeMasterConfig;
 import com.trademaster.models.HomeModel;
 import com.trademaster.utils.NumberFormatUtils;
-import com.trademaster.views.home.HomeView;
+import com.trademaster.ui.views.home.HomeView;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 

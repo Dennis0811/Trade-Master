@@ -6,15 +6,14 @@ import com.trademaster.services.models.GEItemPriceData;
 import com.trademaster.services.models.GEPriceResponse;
 import com.trademaster.types.TimestepType;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ItemComposition;
 import net.runelite.client.game.ItemManager;
-import okhttp3.*;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
 
 
 @Slf4j
@@ -34,7 +33,7 @@ public class GEPriceService {
     private TimestepType timestepType;
     private final OkHttpClient httpClient;
     private final Gson gson;
-    private final Map<Integer, CachedPrice> priceCache = new HashMap<>();
+    private final HashMap<Integer, CachedPrice> priceCache = new HashMap<>();
 
 
     public GEPriceService() {

@@ -1,4 +1,4 @@
-package com.trademaster.views.home;
+package com.trademaster.ui.views.home;
 
 import com.trademaster.controllers.HomeController;
 import lombok.extern.slf4j.Slf4j;
