@@ -9,6 +9,7 @@ import com.trademaster.services.DbService;
 import com.trademaster.services.GEPriceService;
 import com.trademaster.services.WealthDataService;
 import com.trademaster.services.models.GEItemPriceData;
+import com.trademaster.utils.NumberFormatUtils;
 import com.trademaster.views.home.HomeView;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -185,8 +186,7 @@ public class TradeMasterPlugin extends Plugin {
         MenuEntry menuEntry = getLastMenuEntry();
         if (menuEntry == null) return;
         int itemId = menuEntry.getItemId();
-        if (lastHoveredItemId == itemId || itemId < 1) return;
-        if (!shouldEnableTooltip(menuEntry)) return;
+        if (lastHoveredItemId == itemId || itemId < 1 || !shouldEnableTooltip(menuEntry)) return;
 
         lastHoveredItemId = itemId;
         CompletableFuture.runAsync(() -> {
@@ -199,33 +199,35 @@ public class TradeMasterPlugin extends Plugin {
         if (configChanged.getGroup().equals("trademaster")) {
             controller.refresh();
 
-            if (configChanged.getKey().equals("autoSaveInterval")) {
-                autoSaveService.reschedule();
-            }
-            if (configChanged.getKey().equals("autoSaveEnabled")) {
-                if (config.autoSaveEnabled()) {
-                    autoSaveService.start(dbService);
-                } else {
-                    autoSaveService.stop();
-                }
-            }
-            if (configChanged.getKey().equals("geTooltipEnabled")) {
-                geTooltipEnabled = config.geTooltipEnabled();
-            }
-            if (configChanged.getKey().equals("showLastBuyPrice")) {
-                showLastBuyPrice = config.showLastBuyPrice();
-            }
-            if (configChanged.getKey().equals("showLastSellPrice")) {
-                showLastSellPrice = config.showLastSellPrice();
-            }
-            if (configChanged.getKey().equals("showLastBuyTime")) {
-                showLastBuyTime = config.showLastBuyTime();
-            }
-            if (configChanged.getKey().equals("showLastSellTime")) {
-                showLastSellTime = config.showLastSellTime();
-            }
-            if (configChanged.getKey().equals("showHaPrice")) {
-                showHaPrice = config.showHaPrice();
+            switch (configChanged.getKey()) {
+                case "autoSaveInterval":
+                    autoSaveService.reschedule();
+                    break;
+                case "autoSaveEnabled":
+                    if (config.autoSaveEnabled()) {
+                        autoSaveService.start(dbService);
+                    } else {
+                        autoSaveService.stop();
+                    }
+                    break;
+                case "geTooltipEnabled":
+                    geTooltipEnabled = config.geTooltipEnabled();
+                    break;
+                case "showLastBuyPrice":
+                    showLastBuyPrice = config.showLastBuyPrice();
+                    break;
+                case "showLastSellPrice":
+                    showLastSellPrice = config.showLastSellPrice();
+                    break;
+                case "showLastBuyTime":
+                    showLastBuyTime = config.showLastBuyTime();
+                    break;
+                case "showLastSellTime":
+                    showLastSellTime = config.showLastSellTime();
+                    break;
+                case "showHaPrice":
+                    showHaPrice = config.showHaPrice();
+                    break;
             }
         }
     }
@@ -264,15 +266,19 @@ public class TradeMasterPlugin extends Plugin {
         StringBuilder formatString = new StringBuilder();
         ArrayList<Object> arrayList = new ArrayList<>();
 
+        String lastBuyPriceString = NumberFormatUtils.formatNumber(lastBuyPrice);
+        String lastSellPriceString = NumberFormatUtils.formatNumber(lastSellPrice);
+        String highAlchemyPriceString = NumberFormatUtils.formatNumber(highAlchemyPrice);
+
         if (showLastBuyPrice) {
-            formatString.append("%s: %d GP<br>");
+            formatString.append("%s: %s GP<br>");
             arrayList.add("Last GE Buy Price");
-            arrayList.add(lastBuyPrice);
+            arrayList.add(lastBuyPriceString);
         }
         if (showLastSellPrice) {
-            formatString.append("%s: %d GP<br>");
+            formatString.append("%s: %s GP<br>");
             arrayList.add("Last GE Sell Price");
-            arrayList.add(lastSellPrice);
+            arrayList.add(lastSellPriceString);
         }
         if (showLastBuyTime) {
             formatString.append("%s: %s<br>");
@@ -285,9 +291,9 @@ public class TradeMasterPlugin extends Plugin {
             arrayList.add(timeAgo(lastSellTime));
         }
         if (showHaPrice) {
-            formatString.append("%s: %d GP");
+            formatString.append("%s: %s GP");
             arrayList.add("HA");
-            arrayList.add(highAlchemyPrice);
+            arrayList.add(highAlchemyPriceString);
         }
         return String.format(formatString.toString(), arrayList.toArray());
     }
