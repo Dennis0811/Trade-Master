@@ -82,6 +82,7 @@ public class TradeMasterPlugin extends Plugin {
     private boolean showLastBuyTime;
     private boolean showLastSellTime;
     private boolean showHaPrice;
+    private boolean showMultipliedTooltipSection;
     private boolean geTooltipEnabled;
 
 
@@ -103,12 +104,13 @@ public class TradeMasterPlugin extends Plugin {
             controller.refresh();
         }
 
+        geTooltipEnabled = config.geTooltipEnabled();
         showLastBuyPrice = config.showLastBuyPrice();
         showLastSellPrice = config.showLastSellPrice();
         showLastBuyTime = config.showLastBuyTime();
         showLastSellTime = config.showLastSellTime();
         showHaPrice = config.showHaPrice();
-        geTooltipEnabled = config.geTooltipEnabled();
+        showMultipliedTooltipSection = config.showMultipliedSection();
 
         navButton = NavigationButton.builder()
                 .tooltip("Trade Master")
@@ -171,45 +173,61 @@ public class TradeMasterPlugin extends Plugin {
         MenuEntry menuEntry = getLastMenuEntry();
         if (menuEntry == null || !shouldEnableTooltip(menuEntry)) return;
 
-        if (priceData == null) {
-            tooltipManager.add(new Tooltip("Loading..."));
-            return;
-        }
-
         int itemId = menuEntry.getItemId();
+        itemId = itemManager.canonicalize(itemId);
         if (itemId < 1) return;
+
         ItemComposition comp = itemManager.getItemComposition(itemId);
 
-        if (comp.isTradeable()) {
-            tooltipManager.add(new Tooltip(formatTooltip(priceData, comp)));
+        if (comp.isTradeable() && priceData != null) {
+            String tooltipText = formatTooltip(priceData);
+            if (tooltipText != null) {
+                tooltipManager.add(new Tooltip(tooltipText));
+            }
         }
-        String formattedTooltipString = formatTooltip(priceData, fallbackPrice, comp);
-        if (formattedTooltipString != null) {
-            tooltipManager.add(new Tooltip(formattedTooltipString));
+        if (showMultipliedTooltipSection) {
+            String formattedTooltipString = formatTooltip(priceData, fallbackPrice, comp);
+            if (formattedTooltipString != null) {
+                tooltipManager.add(new Tooltip(formattedTooltipString));
+            }
         }
     }
 
     @Subscribe
     public void onMenuEntryAdded(MenuEntryAdded menuEntryAdded) {
         if (!geTooltipEnabled) return;
+
         MenuEntry menuEntry = menuEntryAdded.getMenuEntry();
         if (menuEntry == null) return;
+
         int itemId = menuEntry.getItemId();
-        if (lastHoveredItemId == itemId || itemId < 1 || !shouldEnableTooltip(menuEntry)) return;
+        int canonicalizedId = itemManager.canonicalize(itemId);
 
-        lastHoveredItemId = itemId;
+        if (lastHoveredItemId == canonicalizedId
+                || canonicalizedId < 1
+                || !shouldEnableTooltip(menuEntry))
+            return;
 
-        if (itemManager.getItemComposition(itemId).isTradeable()) {
-            CompletableFuture.runAsync(() -> {
-                priceData = gePriceService.getPrice(itemId);
-            });
-        } else {
-            fallbackPrice = gePriceService.getFallbackPrice(itemId);
-        }
+        priceData = null;
+        fallbackPrice = 0;
+        ItemComposition comp = itemManager.getItemComposition(canonicalizedId);
 
         Widget widget = menuEntry.getWidget();
         if (widget == null) return;
         itemQuantity = widget.getItemQuantity();
+
+        if (comp.isTradeable()) {
+            CompletableFuture.runAsync(() -> {
+                GEItemPriceData data = gePriceService.getPrice(canonicalizedId);
+                if (lastHoveredItemId == canonicalizedId) {
+                    priceData = data;
+                }
+            });
+        } else {
+            fallbackPrice = gePriceService.getFallbackPrice(canonicalizedId);
+        }
+
+        lastHoveredItemId = canonicalizedId;
     }
 
     @Subscribe
@@ -243,6 +261,9 @@ public class TradeMasterPlugin extends Plugin {
                     break;
                 case "showHaPrice":
                     showHaPrice = config.showHaPrice();
+                    break;
+                case "showMultipliedSection":
+                    showMultipliedTooltipSection = config.showMultipliedSection();
                     break;
                 case "abbreviateThreshold":
                 case "abbreviateGpTotalEnabled":
@@ -292,13 +313,12 @@ public class TradeMasterPlugin extends Plugin {
         }
     }
 
-    private String createCustomMenuEntry(int lastBuyPrice, int lastSellPrice, long lastBuyTime, long lastSellTime, int haPrice) {
+    private String createCustomMenuEntry(int lastBuyPrice, int lastSellPrice, long lastBuyTime, long lastSellTime) {
         StringBuilder formatString = new StringBuilder();
         ArrayList<Object> arrayList = new ArrayList<>();
 
         String lastBuyPriceString = NumberFormatUtils.formatNumber(lastBuyPrice);
         String lastSellPriceString = NumberFormatUtils.formatNumber(lastSellPrice);
-        String haPriceString = NumberFormatUtils.formatNumber(haPrice);
 
         if (showLastBuyPrice) {
             formatString.append("%s: %s GP</br>");
@@ -320,11 +340,7 @@ public class TradeMasterPlugin extends Plugin {
             arrayList.add("Last GE Sell Time");
             arrayList.add(timeAgo(lastSellTime));
         }
-        if (showHaPrice && haPrice > 0) {
-            formatString.append("%s: %s GP</br>");
-            arrayList.add("HA");
-            arrayList.add(haPriceString);
-        }
+        if (arrayList.isEmpty()) return null;
         return String.format(formatString.toString(), arrayList.toArray());
     }
 
@@ -355,6 +371,7 @@ public class TradeMasterPlugin extends Plugin {
 
     private boolean shouldEnableTooltip(MenuEntry menuEntry) {
         int itemId = menuEntry.getItemId();
+        itemId = itemManager.canonicalize(itemId);
         if (itemId < 1) return false;
         Widget widget = menuEntry.getWidget();
         return widget != null &&
@@ -372,13 +389,12 @@ public class TradeMasterPlugin extends Plugin {
         return menuEntries[lastEntryId];
     }
 
-    private String formatTooltip(GEItemPriceData data, ItemComposition comp) {
-        return ColorUtil.prependColorTag(
-                createCustomMenuEntry(
-                        data.getHigh(), data.getLow(), data.getHighTime(), data.getLowTime(), comp.getHaPrice()
-                ),
-                Color.WHITE
+    private String formatTooltip(GEItemPriceData data) {
+        String customMenuEntry = createCustomMenuEntry(
+                data.getHigh(), data.getLow(), data.getHighTime(), data.getLowTime()
         );
+        if (customMenuEntry == null) return null;
+        return ColorUtil.prependColorTag(customMenuEntry, Color.WHITE);
     }
 
     private String formatTooltip(GEItemPriceData priceData, int fallbackPrice, ItemComposition comp) {
@@ -391,14 +407,17 @@ public class TradeMasterPlugin extends Plugin {
 
         StringBuilder formatString = new StringBuilder();
         ArrayList<String> arrayList = new ArrayList<>();
+
         long priceQuantity = (long) usedPrice * itemQuantity;
         long haPriceQuantity = (long) comp.getHaPrice() * itemQuantity;
+        int itemId = comp.getId();
+        itemId = itemManager.canonicalize(itemId);
 
-        if (comp.getId() == ItemID.COINS || comp.getId() == ItemID.PLATINUM) {
+        if (itemId == ItemID.COINS || itemId == ItemID.PLATINUM) {
             formatString.append("%s GP</br>");
             arrayList.add(NumberFormatUtils.formatNumber(priceQuantity));
         } else if (priceQuantity > 0 && itemIsTradeable) {
-            formatString.append("%s GP");
+            formatString.append("GE: %s GP");
             arrayList.add(NumberFormatUtils.formatNumber(priceQuantity));
 
             if (itemQuantity > 1) {
@@ -411,7 +430,12 @@ public class TradeMasterPlugin extends Plugin {
         if (showHaPrice && haPriceQuantity > 0) {
             formatString.append("%s: %s GP");
             arrayList.add("HA");
-            arrayList.add(String.valueOf(haPriceQuantity));
+            arrayList.add(NumberFormatUtils.formatNumber(haPriceQuantity));
+
+            if (itemQuantity > 1) {
+                formatString.append(" (%s ea)");
+                arrayList.add(NumberFormatUtils.formatNumber(comp.getHaPrice()));
+            }
         }
 
         if (formatString.toString().isEmpty()) return null;

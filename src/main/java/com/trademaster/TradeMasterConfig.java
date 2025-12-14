@@ -109,6 +109,17 @@ public interface TradeMasterConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            section = tooltipInfo,
+            position = 7,
+            keyName = "showMultipliedSection",
+            name = "Show multiplied prices",
+            description = "Displays the HA and GE price multiplied with the item quantity."
+    )
+    default boolean showMultipliedSection() {
+        return true;
+    }
+
 
     @ConfigSection(
             name = "Abbreviate numbers",
@@ -182,7 +193,5 @@ public interface TradeMasterConfig extends Config {
     default boolean abbreviateHoverGeEnabled() {
         return false;
     }
-
-
 }
 
