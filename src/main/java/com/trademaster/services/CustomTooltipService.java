@@ -144,17 +144,17 @@ public class CustomTooltipService {
         }
         if (config.showLastBuyTime()) {
             formatString.append("Last GE Buy Time: ")
-                    .append(TimeUtils.timeAgo(lastBuyTime))
+                    .append(getColoredTimeString(lastBuyTime))
                     .append("</br>");
         }
         if (config.showLastSellTime()) {
             formatString.append("Last GE Sell Time: ")
-                    .append(TimeUtils.timeAgo(lastSellTime))
+                    .append(getColoredTimeString(lastSellTime))
                     .append("</br>");
         }
 
         if (formatString.length() == 0) return null;
-        return ColorUtil.prependColorTag(formatString.toString(), Color.WHITE);
+        return formatString.toString();
     }
 
     private String buildSummarySection(GEItemPriceData priceData, int fallbackPrice, ItemComposition comp) {
@@ -193,7 +193,7 @@ public class CustomTooltipService {
         }
 
         if (formatString.length() == 0) return null;
-        return ColorUtil.prependColorTag(formatString.toString(), Color.WHITE);
+        return formatString.toString();
     }
 
     private boolean shouldEnableTooltip(MenuEntry menuEntry) {
@@ -247,5 +247,9 @@ public class CustomTooltipService {
 
     private int getCanonIdWithGroundCheck(MenuEntry entry) {
         return itemManager.canonicalize(isGroundItem(entry) ? entry.getIdentifier() : entry.getItemId());
+    }
+
+    private String getColoredTimeString(long unixTime) {
+        return ColorUtil.wrapWithColorTag(TimeUtils.timeAgo(unixTime), TimeUtils.isOlderThan(TimeUtils.minutesToMillis(config.stalePriceThreshold()), unixTime) ? Color.RED : Color.WHITE);
     }
 }

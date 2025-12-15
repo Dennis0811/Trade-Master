@@ -13,7 +13,8 @@ import okhttp3.Response;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 
 @Slf4j
@@ -25,7 +26,8 @@ public class GEPriceService {
     private final static String MAPPING = "/mapping";
     private final static String TIMESERIES = "/timeseries";
     private final static String ID_QUERY_PARAMETER = "id";
-    private final static long CACHE_LIFETIME = 60 * 1000;
+    private final static long CACHE_LIFETIME = 40_000; // 60_000 = 1 min
+    private final static int MAX_CACHE_SIZE = 100;
 
     @Inject
     ItemManager itemManager;
@@ -33,7 +35,13 @@ public class GEPriceService {
     private TimestepType timestepType;
     private final OkHttpClient httpClient;
     private final Gson gson;
-    private final HashMap<Integer, CachedPrice> priceCache = new HashMap<>();
+    private final Map<Integer, CachedPrice> priceCache =
+            new LinkedHashMap<>(MAX_CACHE_SIZE, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Integer, CachedPrice> eldest) {
+                    return size() > MAX_CACHE_SIZE;
+                }
+            };
 
 
     public GEPriceService() {
@@ -53,7 +61,6 @@ public class GEPriceService {
         if (fresh != null) {
             priceCache.put(itemId, new CachedPrice(fresh, now));
         }
-
         return fresh;
     }
 

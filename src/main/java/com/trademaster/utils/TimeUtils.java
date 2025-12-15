@@ -19,4 +19,25 @@ public class TimeUtils {
         if (hours < 24) return hours + " hours ago";
         return days + " days ago";
     }
+
+    /**
+     * Checks if a given UNIX timestamp is older than a specified age in milliseconds.
+     *
+     * @param maxAgeMillis    The maximum allowed age in milliseconds.
+     * @param unixTimeSeconds The UNIX timestamp in seconds.
+     * @return true if the timestamp is older than maxAgeMillis, false otherwise.
+     */
+    public static boolean isOlderThan(long maxAgeMillis, long unixTimeSeconds) {
+        long currentTimeMillis = System.currentTimeMillis();
+        long timestampMillis = unixTimeSeconds * 1000L;
+
+        long age = Math.max(0, currentTimeMillis - timestampMillis);
+
+        return age > maxAgeMillis;
+    }
+
+    public static long minutesToMillis(int minutes) {
+        return (long) minutes * 60000;
+    }
+
 }
