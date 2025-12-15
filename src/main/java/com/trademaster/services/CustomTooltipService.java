@@ -5,9 +5,8 @@ import com.trademaster.TradeMasterConfig;
 import com.trademaster.services.models.GEItemPriceData;
 import com.trademaster.utils.NumberFormatUtils;
 import com.trademaster.utils.TimeUtils;
-import net.runelite.api.Client;
-import net.runelite.api.ItemComposition;
-import net.runelite.api.MenuEntry;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.*;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.widgets.Widget;
@@ -21,9 +20,9 @@ import net.runelite.client.util.ColorUtil;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
+@Slf4j
 @Singleton
 public class CustomTooltipService {
     @Inject
@@ -57,13 +56,15 @@ public class CustomTooltipService {
             return;
         }
 
-        int itemId = menuEntry.getItemId();
-        itemId = itemManager.canonicalize(itemId);
+        int itemId = getCanonIdWithGroundCheck(menuEntry);
+
         if (itemId < 1) return;
 
         ItemComposition comp = itemManager.getItemComposition(itemId);
+
         if (comp.isTradeable() && priceData != null) {
             String tooltipText = buildGESection(priceData);
+
             if (tooltipText != null) {
                 tooltipManager.add(new Tooltip(tooltipText));
             }
@@ -83,37 +84,40 @@ public class CustomTooltipService {
         if (menuEntry == null) return;
         lastMenuEntry = menuEntry;
 
-        int itemId = menuEntry.getItemId();
-        int canonicalizedId = itemManager.canonicalize(itemId);
+        int itemId = getCanonIdWithGroundCheck(menuEntry);
 
-        if (lastHoveredItemId == canonicalizedId
-                || canonicalizedId < 1
+
+        if (lastHoveredItemId == itemId
+                || itemId < 1
                 || !shouldEnableTooltip(menuEntry))
             return;
 
         priceData = null;
         fallbackPrice = 0;
-        ItemComposition comp = itemManager.getItemComposition(canonicalizedId);
+        ItemComposition comp = itemManager.getItemComposition(itemId);
 
-        Widget widget = menuEntry.getWidget();
-        if (widget == null) return;
-        itemQuantity = widget.getItemQuantity();
+        if (isGroundItem(menuEntry)) {
+            itemQuantity = getGroundItemQuantity(menuEntry);
+        } else {
+            Widget widget = menuEntry.getWidget();
+            if (widget == null) return;
+            itemQuantity = widget.getItemQuantity();
+        }
 
         if (comp.isTradeable()) {
             CompletableFuture
-                    .supplyAsync(() -> gePriceService.getPrice(canonicalizedId))
+                    .supplyAsync(() -> gePriceService.getPrice(itemId))
                     .thenAccept(data ->
                             clientThread.invokeLater(() -> {
-                                if (lastHoveredItemId == canonicalizedId) {
+                                if (lastHoveredItemId == itemId) {
                                     priceData = data;
                                 }
                             })
                     );
         } else {
-            fallbackPrice = gePriceService.getFallbackPrice(canonicalizedId);
+            fallbackPrice = gePriceService.getFallbackPrice(itemId);
         }
-
-        lastHoveredItemId = canonicalizedId;
+        lastHoveredItemId = itemId;
     }
 
 
@@ -149,6 +153,7 @@ public class CustomTooltipService {
                     .append("</br>");
         }
 
+        if (formatString.length() == 0) return null;
         return ColorUtil.prependColorTag(formatString.toString(), Color.WHITE);
     }
 
@@ -175,11 +180,7 @@ public class CustomTooltipService {
                     .append(NumberFormatUtils.formatNumber(priceQuantity))
                     .append(" GP");
 
-            if (itemQuantity > 1) {
-                formatString.append(" (")
-                        .append(NumberFormatUtils.formatNumber(usedPrice))
-                        .append(" ea)");
-            }
+            appendSingularPrice(formatString, usedPrice);
             formatString.append("</br>");
         }
 
@@ -188,22 +189,23 @@ public class CustomTooltipService {
                     .append(NumberFormatUtils.formatNumber(haPriceQuantity))
                     .append(" GP");
 
-            if (itemQuantity > 1) {
-                formatString.append(" (")
-                        .append(NumberFormatUtils.formatNumber(comp.getHaPrice()))
-                        .append(" ea)");
-            }
+            appendSingularPrice(formatString, comp.getHaPrice());
         }
 
-        if (formatString.toString().isEmpty()) return null;
+        if (formatString.length() == 0) return null;
         return ColorUtil.prependColorTag(formatString.toString(), Color.WHITE);
     }
 
     private boolean shouldEnableTooltip(MenuEntry menuEntry) {
-        int itemId = menuEntry.getItemId();
-        itemId = itemManager.canonicalize(itemId);
+        int itemId = getCanonIdWithGroundCheck(menuEntry);
+
+        if (isGroundItem(menuEntry)) {
+            return true;
+        }
         if (itemId < 1) return false;
+
         Widget widget = menuEntry.getWidget();
+
         return widget != null &&
                 (WidgetInfo.INVENTORY.getId() == widget.getId()
                         || WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER.getId() == widget.getId()
@@ -212,5 +214,38 @@ public class CustomTooltipService {
                 );
     }
 
+    private boolean isGroundItem(MenuEntry entry) {
+        MenuAction action = entry.getType();
+        return action == MenuAction.EXAMINE_ITEM_GROUND;
+    }
 
+
+    private void appendSingularPrice(StringBuilder sb, int price) {
+        if (itemQuantity > 1) {
+            sb.append(" (")
+                    .append(NumberFormatUtils.formatNumber(price))
+                    .append(" ea)");
+        }
+    }
+
+    private int getGroundItemQuantity(MenuEntry entry) {
+        int sceneX = entry.getParam0();
+        int sceneY = entry.getParam1();
+
+        Tile tile = client.getScene().getTiles()[client.getPlane()][sceneX][sceneY];
+        if (tile == null) return 1;
+
+        int itemId = itemManager.canonicalize(entry.getIdentifier());
+
+        for (TileItem item : tile.getGroundItems()) {
+            if (itemManager.canonicalize(item.getId()) == itemId) {
+                return item.getQuantity();
+            }
+        }
+        return 1;
+    }
+
+    private int getCanonIdWithGroundCheck(MenuEntry entry) {
+        return itemManager.canonicalize(isGroundItem(entry) ? entry.getIdentifier() : entry.getItemId());
+    }
 }
