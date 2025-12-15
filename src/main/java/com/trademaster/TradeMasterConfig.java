@@ -101,22 +101,22 @@ public interface TradeMasterConfig extends Config {
     @ConfigItem(
             section = tooltipInfo,
             position = 6,
-            keyName = "showHaPrice",
-            name = "Show HA price",
-            description = "Displays the high alchemy price of an item."
+            keyName = "showSummarySection",
+            name = "Shows summary section",
+            description = "Displays the HA and GE price multiplied with the item quantity."
     )
-    default boolean showHaPrice() {
+    default boolean showSummarySection() {
         return true;
     }
 
     @ConfigItem(
             section = tooltipInfo,
             position = 7,
-            keyName = "showMultipliedSection",
-            name = "Show multiplied prices",
-            description = "Displays the HA and GE price multiplied with the item quantity."
+            keyName = "showHaPrice",
+            name = "Show HA price",
+            description = "Displays the high alchemy price of an item in the summary section."
     )
-    default boolean showMultipliedSection() {
+    default boolean showHaPrice() {
         return true;
     }
 

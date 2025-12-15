@@ -11,8 +11,15 @@ import javax.inject.Singleton;
 @Singleton
 public class DbService {
     private DbManager dbManager;
+    private String activePlayer;
 
     public void create(String playerName, WealthData wealthData) {
+        if (dbManager != null && playerName.equals(activePlayer)) {
+            return;
+        }
+
+        close();
+        activePlayer = playerName;
         dbManager = new DbManager(playerName, wealthData);
         log.info("DBManager created");
     }
